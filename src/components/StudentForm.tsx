@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,20 +39,29 @@ interface StudentFormProps {
   onGenerateResult: (data: StudentData) => void;
 }
 
-const subjects = [
-  "English",
-  "Urdu", 
-  "Mathematics",
-  "General Science",
-  "Social Studies",
-  "Islamiyat",
-  "Tadrees-e-Quran (Naazrah Quran)",
-  "Computer Studies"
-];
+// Class and subject mapping
+const classSubjects: { [key: string]: string[] } = {
+  "Play-Group": ["English", "Urdu", "Math", "Islamiat", "Nazra", "G.K"],
+  "Nursery": ["English", "Urdu", "Math", "Computer", "Islamiat", "Nazra", "G.K"],
+  "Kindergarten": ["English", "Urdu", "Math", "Computer", "Islamiat", "Nazra", "G.K"],
+  "Class 1": ["English", "Urdu", "Math", "Computer", "G.K", "Islamiat", "T.Q"],
+  "Class 2": ["English", "Urdu", "Math", "Computer", "G.K", "Islamiat", "T.Q"],
+  "Class 3": ["English", "Urdu", "Math", "Computer", "G.K", "Islamiat", "T.Q"],
+  "Class 4": ["English", "Urdu", "Math", "Science", "Computer", "Social Studies", "T.Q"],
+  "Class 5": ["English", "Urdu", "Math", "Islamiat", "Social Studies", "Science", "Computer", "T.Q"],
+  "Class 6": ["English", "Urdu", "Math", "History", "Computer", "Islamiat", "Geography", "Nazra"],
+  "Class 7": ["English", "Urdu", "Math", "Science", "Geography", "History", "Nazra", "Islamiat", "Computer"],
+  "Class 8": ["English", "Urdu", "Math", "Science", "Geography", "History", "Nazra", "Computer", "Islamiat"],
+  "Class 9": ["English", "Urdu", "Math", "Physics", "Biology", "Chemistry", "Islamiat", "Pakistan Studies"],
+  "Class 10": ["English", "Urdu", "Math", "Physics", "Biology", "Chemistry", "Islamiat", "Pakistan Studies"]
+};
+
+const classOptions = Object.keys(classSubjects);
 
 const gradeOptions = ["A", "B", "S", "NI"];
 
 export const StudentForm = ({ onGenerateResult }: StudentFormProps) => {
+  const [selectedClass, setSelectedClass] = useState<string>("");
   const [formData, setFormData] = useState<StudentData>({
     name: "",
     className: "",
@@ -61,10 +70,7 @@ export const StudentForm = ({ onGenerateResult }: StudentFormProps) => {
     age: "",
     campusName: "",
     academicYear: "2024",
-    subjects: subjects.reduce((acc, subject) => ({
-      ...acc,
-      [subject]: { termMarks: 0, examMarks: 0 }
-    }), {}),
+    subjects: {},
     generalProgress: {
       art: "",
       attendance: "",
@@ -80,6 +86,22 @@ export const StudentForm = ({ onGenerateResult }: StudentFormProps) => {
     classTeacher: "",
     headOfSchool: ""
   });
+
+  // Update subjects when class changes
+  useEffect(() => {
+    if (selectedClass && classSubjects[selectedClass]) {
+      const newSubjects = classSubjects[selectedClass].reduce((acc, subject) => ({
+        ...acc,
+        [subject]: { termMarks: 0, examMarks: 0 }
+      }), {});
+      
+      setFormData(prev => ({
+        ...prev,
+        className: selectedClass,
+        subjects: newSubjects
+      }));
+    }
+  }, [selectedClass]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +131,8 @@ export const StudentForm = ({ onGenerateResult }: StudentFormProps) => {
     }));
   };
 
+  const currentSubjects = selectedClass ? classSubjects[selectedClass] || [] : [];
+
   return (
     <Card className="w-full max-w-5xl mx-auto shadow-2xl border-0 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm">
       <CardHeader className="bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b border-border/50">
@@ -136,14 +160,18 @@ export const StudentForm = ({ onGenerateResult }: StudentFormProps) => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="className" className="text-sm font-medium text-foreground">Class</Label>
-                <Input
-                  id="className"
-                  value={formData.className}
-                  onChange={(e) => setFormData(prev => ({ ...prev, className: e.target.value }))}
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g., IV"
-                  required
-                />
+                <Select value={selectedClass} onValueChange={setSelectedClass} required>
+                  <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-primary/20">
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classOptions.map((classOption) => (
+                      <SelectItem key={classOption} value={classOption}>
+                        {classOption}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="section" className="text-sm font-medium text-foreground">Section</Label>
@@ -183,46 +211,53 @@ export const StudentForm = ({ onGenerateResult }: StudentFormProps) => {
 
           {/* Academic Performance */}
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-primary border-b border-border/50 pb-2">Academic Performance</h3>
-            <div className="space-y-4">
-              {subjects.map((subject) => (
-                <div key={subject} className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:border-primary/30 transition-all duration-200">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
-                    <Label className="font-semibold text-foreground text-sm lg:text-base">{subject}</Label>
-                    <div className="space-y-2">
-                      <Label htmlFor={`${subject}-term`} className="text-xs text-muted-foreground">Term Marks (out of 100)</Label>
-                      <Input
-                        id={`${subject}-term`}
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={formData.subjects[subject]?.termMarks || ""}
-                        onChange={(e) => updateSubjectMarks(subject, 'termMarks', parseInt(e.target.value) || 0)}
-                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                        placeholder="0"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`${subject}-exam`} className="text-xs text-muted-foreground">Exam Marks (out of 100)</Label>
-                      <Input
-                        id={`${subject}-exam`}
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={formData.subjects[subject]?.examMarks || ""}
-                        onChange={(e) => updateSubjectMarks(subject, 'examMarks', parseInt(e.target.value) || 0)}
-                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                        placeholder="0"
-                        required
-                      />
+            <h3 className="text-xl font-semibold text-primary border-b border-border/50 pb-2">
+              Academic Performance {selectedClass && `- ${selectedClass}`}
+            </h3>
+            {selectedClass ? (
+              <div className="space-y-4">
+                {currentSubjects.map((subject) => (
+                  <div key={subject} className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:border-primary/30 transition-all duration-200">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+                      <Label className="font-semibold text-foreground text-sm lg:text-base">{subject}</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor={`${subject}-term`} className="text-xs text-muted-foreground">Term Marks (out of 100)</Label>
+                        <Input
+                          id={`${subject}-term`}
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={formData.subjects[subject]?.termMarks || ""}
+                          onChange={(e) => updateSubjectMarks(subject, 'termMarks', parseInt(e.target.value) || 0)}
+                          className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                          placeholder="0"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`${subject}-exam`} className="text-xs text-muted-foreground">Exam Marks (out of 100)</Label>
+                        <Input
+                          id={`${subject}-exam`}
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={formData.subjects[subject]?.examMarks || ""}
+                          onChange={(e) => updateSubjectMarks(subject, 'examMarks', parseInt(e.target.value) || 0)}
+                          className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                          placeholder="0"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                Please select a class to view subjects
+              </div>
+            )}
           </div>
-
 
           {/* Comments */}
           <div className="space-y-6">
@@ -300,7 +335,11 @@ export const StudentForm = ({ onGenerateResult }: StudentFormProps) => {
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl">
+          <Button 
+            type="submit" 
+            className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+            disabled={!selectedClass}
+          >
             Generate Result Card
           </Button>
         </form>

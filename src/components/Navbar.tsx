@@ -9,6 +9,10 @@ export const Navbar = () => {
               src="/logo.png" 
               alt="The Dream Team Realty Logo" 
               className="h-12 w-auto object-contain"
+              onError={(e) => {
+                // Hide the image if it fails to load
+                e.currentTarget.style.display = 'none';
+              }}
             />
           </div>
           
